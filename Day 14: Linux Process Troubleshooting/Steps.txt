@@ -1,0 +1,29 @@
+Perform the below commands based on your question server,  user name & other details that might differ. 
+
+Step-1. Run the following commands to determine which server is experiencing the issue.
+telnet app-server port-number
+
+Step-2. SSH into the app server experiencing the connection refused issue and gain root access.
+ssh user@servername - replace with the problematic server
+sudo su - to switch to root user
+
+Step-3. Run the command below to inspect the current status of the Apache HTTPd service.
+systemctl status httpd 
+
+Step-4. With netstat, find out which application is listening on your port and what its process ID (PID) is.
+sudo netstat -tulnp | grep <port-number>
+
+Step-5. Ensure the PID matches the one displayed by netstat.
+ps -ef  | grep sendmail
+
+Step-6. Kill the running process using below command and check the status again
+kill <process id>
+ps -ef  | grep sendmail
+
+Step-7. Start the Apache HTTPd service and inspect its status.
+systemctl start httpd
+systemctl status httpd
+
+Step-8. Verify that the Apache HTTPd service is running according to the task requirements."
+telnet app-server port-number
+
