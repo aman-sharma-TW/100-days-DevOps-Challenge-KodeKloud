@@ -1,0 +1,45 @@
+Here’s how to prepare App Server 2 for the application deployment using Nginx with SSL as per the given requirements.
+
+1. Install and configure Nginx
+* Login to App Server 2 (from the Jump Host):
+ssh steve@appserver2
+
+* Install nginx:
+sudo yum install nginx -y
+
+* Enable and start nginx:
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+2. Move SSL certificate and key to appropriate location
+* Move the provided self-signed cert and key:
+sudo mkdir -p /etc/nginx/ssl
+
+sudo mv /tmp/nautilus.crt /etc/nginx/ssl/
+sudo mv /tmp/nautilus.key /etc/nginx/ssl/
+
+# Set permissions
+sudo chmod 600 /etc/nginx/ssl/nautilus.*
+
+3. Configure Nginx for SSL
+* Modify you nginx.conf file as per the file in the repo (nginx.conf)
+* Then test the nginx configuration:
+sudo nginx -t
+
+* If all is OK, reload nginx:
+sudo systemctl reload nginx
+
+4. Create index.html
+echo "Welcome!" | sudo tee /var/www/html/index.html
+
+5. Test from Jump Host
+* From the Jump Host, run:
+curl -Ik https://<App-Server-2-IP>
+
+Final Checklist:
+ 1. Nginx installed and running on App Server 2
+ 2. SSL certificate and key moved and configured
+ 3. HTTPS server block set up in nginx
+ 4. index.html with Welcome! created
+ 5. Curl from Jump Host returns 200 OK over HTTPS
+

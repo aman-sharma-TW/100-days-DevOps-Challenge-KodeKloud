@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Exit immediately if any command fails
+set -e
+
+# Step 1: Install Nginx
+echo "[+] Installing nginx..."
+if command -v apt &>/dev/null; then
+    sudo apt update
+    sudo apt install nginx -y
+elif command -v yum &>/dev/null; then
+    sudo yum install nginx -y
+else
+    echo "[-] Unsupported OS package manager!"
+    exit 1
+fi
+
+# Step 2: Enable and start Nginx
+echo "[+] Enabling and starting nginx..."
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+# Step 3: Move SSL cert and key to /etc/nginx/ssl
+echo "[+] Moving SSL certificate and key..."
+sudo mkdir -p /etc/nginx/ssl
+sudo mv /tmp/nautilus.crt /etc/nginx/ssl/
+sudo mv /tmp/nautilus.key /etc/nginx/ssl/
+sudo chmod 600 /etc/nginx/ssl/nautilus.*
+
+# Step 4: Configure Nginx for SSL
+echo "[+] Configuring nginx for SSL..."
+
+# Detect default config location
+NGINX_DEFAULT_CONF="/etc/nginx/sites-available/default"
+if [ ! -f "$NGINX_DEFAULT_CONF" ]; then
+    # Fallback for RHEL/CentOS
+    NGINX_DEFAULT_CONF="/etc/nginx/nginx.conf"
+fi
+
+# Backup original config
+sudo cp $NGINX_DEFAULT_CONF ${NGINX_DEFAULT_CONF}.bak
+
+# Configure SSL block
+sudo bash -c "cat > $NGINX_DEFAULT_CONF" <<EOF
+server {
+    listen 443 ssl;
+    server_name localhost;
+
+    ssl_certificate /etc/nginx/ssl/nautilus.crt;
+    ssl_certificate_key /etc/nginx/ssl/nautilus.key;
+
+    root /var/www/html;
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+
+server {
+    listen 80;
+    server_name localhost;
+
+    return 301 https://\$host\$request_uri;
+}
+EOF
+
+# Step 5: Create index.html
+echo "[+] Creating index.html with 'Welcome!' content..."
+echo "Welcome!" | sudo tee /var/www/html/index.html > /dev/null
+
+# Step 6: Test and reload nginx
+echo "[+] Testing nginx configuration..."
+sudo nginx -t
+
+echo "[+] Reloading nginx..."
+sudo systemctl reload nginx
+
+echo "[✅] Nginx SSL setup completed successfully!"
